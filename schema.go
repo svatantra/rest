@@ -361,6 +361,8 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				schema.Required = append(schema.Required, fieldName)
 			}
 		}
+	case reflect.Interface:
+		schema = openapi3.NewStringSchema()
 	}
 
 	if schema == nil {
