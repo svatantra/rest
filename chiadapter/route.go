@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/a-h/rest"
+	"github.com/SowjanyaKotha/rest"
 	"github.com/go-chi/chi/v5"
 )
 
