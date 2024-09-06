@@ -323,6 +323,9 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 			if !f.IsExported() {
 				continue
 			}
+			if f.Tag.Get("ext") == "parent-ref" {
+				continue
+			}
 			// Get JSON fieldName.
 			jsonTags := strings.Split(f.Tag.Get("json"), ",")
 			fieldName := jsonTags[0]
