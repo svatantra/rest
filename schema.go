@@ -1,10 +1,11 @@
-package rest
+package openapi
 
 import (
 	"fmt"
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/SowjanyaKotha/rest/enums"
@@ -18,7 +19,7 @@ func newSpec(name string) *openapi3.T {
 		OpenAPI: "3.0.0",
 		Info: &openapi3.Info{
 			Title:      name,
-			Version:    "0.0.0",
+			Version:    "1.0.0",
 			Extensions: map[string]interface{}{},
 		},
 		Components: &openapi3.Components{
@@ -127,6 +128,7 @@ func (api *API) createOpenAPI() (spec *openapi3.T, err error) {
 					return spec, err
 				}
 				resp := openapi3.NewResponse().
+					// Add description for status codes here. Define a new function to add the status codes.
 					WithDescription("").
 					WithContent(map[string]*openapi3.MediaType{
 						"application/json": {
@@ -165,6 +167,29 @@ func (api *API) createOpenAPI() (spec *openapi3.T, err error) {
 		return spec, fmt.Errorf("failed validation: %w", err)
 	}
 
+	for _, many2manyField := range many2manyFields {
+		attribute := many2manyField.StructField
+		jsonTagValue := attribute.Tag.Get("json")
+		fieldType := attribute.Type
+		if fieldType.Kind() == reflect.Slice {
+			elementType := fieldType.Elem()
+			if elementType.Kind() == reflect.Ptr && elementType.Elem().Kind() == reflect.Struct {
+				structType := elementType.Elem()
+				structName := structType.Name()
+				description := fmt.Sprintf("%s represents many2many relationship between %s and %s structs", jsonTagValue, many2manyField.StructName, structName)
+				spec.Components.Schemas[many2manyField.StructName].Value.Properties[jsonTagValue] = &openapi3.SchemaRef{
+					Value: &openapi3.Schema{
+						Type:        &openapi3.Types{"array"},
+						Description: description,
+						Items: &openapi3.SchemaRef{
+							Ref: fmt.Sprintf("#/components/schemas/%s", structName),
+						},
+					},
+				}
+			}
+		}
+	}
+
 	return spec, err
 }
 
@@ -179,6 +204,7 @@ func (api *API) getModelName(t reflect.Type) string {
 	}
 	schemaName := api.normalizeTypeName(pkgPath, typeName)
 	if typeName == "" {
+
 		schemaName = fmt.Sprintf("AnonymousType%d", len(api.models))
 	}
 	return schemaName
@@ -256,9 +282,18 @@ func isMarkedAsDeprecated(comment string) bool {
 	return false
 }
 
+type Many2ManyField struct {
+	StructName  string
+	StructField reflect.StructField
+}
+
+var many2manyFields []Many2ManyField
+
 // RegisterModel allows a model to be registered manually so that additional configuration can be applied.
 // The schema returned can be modified as required.
+
 func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, schema *openapi3.Schema, err error) {
+
 	// Get the name.
 	t := model.Type
 	name = api.getModelName(t)
@@ -318,6 +353,7 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 			return name, schema, fmt.Errorf("failed to get comments for type %q: %w", name, err)
 		}
 		schema.Properties = make(openapi3.Schemas)
+
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
 			if !f.IsExported() {
@@ -326,18 +362,27 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 			if f.Tag.Get("ext") == "parent-ref" {
 				continue
 			}
+
 			// Get JSON fieldName.
 			jsonTags := strings.Split(f.Tag.Get("json"), ",")
 			fieldName := jsonTags[0]
 			if fieldName == "" {
 				fieldName = f.Name
 			}
-			// If the model doesn't exist.
+
+			gormTagValue := f.Tag.Get("gorm")
+			if strings.Contains(gormTagValue, "many2many") {
+				many2manyFields = append(many2manyFields, Many2ManyField{StructName: t.Name(), StructField: f})
+				continue
+			}
+
 			_, alreadyExists := api.models[api.getModelName(f.Type)]
 			fieldSchemaName, fieldSchema, err := api.RegisterModel(modelFromType(f.Type))
+
 			if err != nil {
 				return name, schema, fmt.Errorf("error getting schema for type %q, field %q, failed to get schema for embedded type %q: %w", t, fieldName, f.Type, err)
 			}
+
 			if f.Anonymous {
 				// It's an anonymous type, no need for a reference to it,
 				// since we're copying the fields.
@@ -358,6 +403,10 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				}
 			}
 			schema.Properties[fieldName] = ref
+			if strings.Contains(gormTagValue, "default") {
+				defaultValue := getDefaultValue(gormTagValue)
+				schema.Properties[fieldName].Value.Default = defaultValue
+			}
 			isPtr := f.Type.Kind() == reflect.Pointer
 			hasOmitEmptySet := slices.Contains(jsonTags, "omitempty")
 			if isFieldRequired(isPtr, hasOmitEmptySet) {
@@ -392,6 +441,38 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 	}
 
 	return
+}
+
+func getDefaultValue(gormTagValue string) interface{} {
+	defaultIndex := strings.Index(gormTagValue, "default")
+	semicolonIndex := strings.Index(gormTagValue[defaultIndex:], ";")
+	defaultValue := gormTagValue[defaultIndex+len("default:") : semicolonIndex]
+
+	switch {
+	case defaultValue == "true" || defaultValue == "false":
+		return defaultValue == "true"
+	case defaultValue == "null":
+		return nil
+	case isNumber(defaultValue):
+		if intValue, err := strconv.Atoi(defaultValue); err == nil {
+			return intValue
+		}
+		if floatValue, err := strconv.ParseFloat(defaultValue, 64); err == nil {
+			return floatValue
+		}
+	default:
+		return defaultValue
+	}
+	return defaultValue
+}
+
+func isNumber(value string) bool {
+	_, err := strconv.Atoi(value)
+	if err == nil {
+		return true
+	}
+	_, err = strconv.ParseFloat(value, 64)
+	return err == nil
 }
 
 func (api *API) getCommentsForPackage(pkg string) (pkgComments map[string]string, err error) {
