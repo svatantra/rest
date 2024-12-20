@@ -128,7 +128,6 @@ func (api *API) createOpenAPI() (spec *openapi3.T, err error) {
 					return spec, err
 				}
 				resp := openapi3.NewResponse().
-					// Add description for status codes here. Define a new function to add the status codes.
 					WithDescription("").
 					WithContent(map[string]*openapi3.MediaType{
 						"application/json": {
