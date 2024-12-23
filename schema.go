@@ -371,8 +371,10 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 
 			gormTagValue := f.Tag.Get("gorm")
 			if strings.Contains(gormTagValue, "many2many") {
-				many2manyFields = append(many2manyFields, Many2ManyField{StructName: t.Name(), StructField: f})
-				continue
+				if t.Name() == f.Type.Elem().Elem().Name() {
+					many2manyFields = append(many2manyFields, Many2ManyField{StructName: t.Name(), StructField: f})
+					continue
+				}
 			}
 
 			_, alreadyExists := api.models[api.getModelName(f.Type)]
