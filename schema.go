@@ -370,6 +370,8 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 			}
 
 			gormTagValue := f.Tag.Get("gorm")
+			// Skip field that establishes a many-to-many relationship with the same struct.
+			// It is skipped to avoid infinite loops.
 			if strings.Contains(gormTagValue, "many2many") {
 				if t.Name() == f.Type.Elem().Elem().Name() {
 					many2manyFields = append(many2manyFields, Many2ManyField{StructName: t.Name(), StructField: f})
