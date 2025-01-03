@@ -175,11 +175,9 @@ func (api *API) createOpenAPI() (spec *openapi3.T, err error) {
 			if elementType.Kind() == reflect.Ptr && elementType.Elem().Kind() == reflect.Struct {
 				structType := elementType.Elem()
 				structName := structType.Name()
-				description := fmt.Sprintf("%s represents many2many relationship between %s and %s structs", jsonTagValue, many2manyField.StructName, structName)
 				spec.Components.Schemas[many2manyField.StructName].Value.Properties[jsonTagValue] = &openapi3.SchemaRef{
 					Value: &openapi3.Schema{
-						Type:        &openapi3.Types{"array"},
-						Description: description,
+						Type: &openapi3.Types{"array"},
 						Items: &openapi3.SchemaRef{
 							Ref: fmt.Sprintf("#/components/schemas/%s", structName),
 						},
