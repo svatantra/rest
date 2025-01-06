@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/SowjanyaKotha/rest"
-	"github.com/SowjanyaKotha/rest/chiadapter"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/go-cmp/cmp"
+	"github.com/svatantra/rest"
+	"github.com/svatantra/rest/chiadapter"
 )
 
 func TestMerge(t *testing.T) {

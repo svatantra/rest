@@ -1,4 +1,4 @@
-module github.com/SowjanyaKotha/rest
+module github.com/svatantra/rest
 
 go 1.21
 
