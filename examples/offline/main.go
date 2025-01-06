@@ -6,16 +6,16 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/SowjanyaKotha/rest"
-	"github.com/SowjanyaKotha/rest/examples/offline/models"
 	"github.com/a-h/respond"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/svatantra/rest"
+	"github.com/svatantra/rest/examples/offline/models"
 )
 
 func main() {
 	// Configure the models.
 	api := rest.NewAPI("messages")
-	api.StripPkgPaths = []string{"github.com/SowjanyaKotha/rest/example", "github.com/a-h/respond"}
+	api.StripPkgPaths = []string{"github.com/svatantra/rest/example", "github.com/a-h/respond"}
 
 	api.RegisterModel(rest.ModelOf[respond.Error](), rest.WithDescription("Standard JSON error"), func(s *openapi3.Schema) {
 		status := s.Properties["statusCode"]
