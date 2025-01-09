@@ -404,10 +404,23 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				}
 			}
 			schema.Properties[fieldName] = ref
-			if strings.Contains(gormTagValue, "default") {
+
+			// Add default value to the attributes.
+			if strings.Contains(gormTagValue, "default:") {
 				defaultValue := getDefaultValue(gormTagValue)
 				schema.Properties[fieldName].Value.Default = defaultValue
 			}
+
+			// Add format to the attributes.
+			if f.Type.Kind() == reflect.Int64 {
+				schema.Properties[fieldName].Value.Format = "int64"
+			} else if f.Type.Kind() == reflect.Uint || f.Type.Kind() == reflect.Uint8 || f.Type.Kind() == reflect.Uint16 ||
+				f.Type.Kind() == reflect.Uint32 || f.Type.Kind() == reflect.Uint64 {
+				schema.Properties[fieldName].Value.Format = "int64"
+				minValue := 0.0
+				schema.Properties[fieldName].Value.Min = &minValue
+			}
+
 			isPtr := f.Type.Kind() == reflect.Pointer
 			hasOmitEmptySet := slices.Contains(jsonTags, "omitempty")
 			if isFieldRequired(isPtr, hasOmitEmptySet) {
