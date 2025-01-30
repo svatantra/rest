@@ -454,43 +454,6 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				}
 			}
 
-			// if f.Type.Kind() == reflect.Slice {
-			// elementType := f.Type.Elem().Kind()
-
-			// if elementType == reflect.Slice {
-			// 	innerElementType := f.Type.Elem().Elem().Kind()
-			// 	if innerElementType == reflect.Int64 {
-			// 		schema.Properties[fieldName] = &openapi3.SchemaRef{
-			// 			Value: &openapi3.Schema{
-			// 				Type: &openapi3.Types{"array"},
-			// 				Items: &openapi3.SchemaRef{
-			// 					Value: &openapi3.Schema{
-			// 						Type: &openapi3.Types{"array"},
-			// 						Items: &openapi3.SchemaRef{
-			// 							Value: createIntegerSchema(),
-			// 						},
-			// 					},
-			// 				},
-			// 			},
-			// 		}
-			// 	} else if innerElementType == reflect.Uint || innerElementType == reflect.Uint8 || innerElementType == reflect.Uint16 || innerElementType == reflect.Uint32 || innerElementType == reflect.Uint64 {
-			// 		schema.Properties[fieldName] = &openapi3.SchemaRef{
-			// 			Value: &openapi3.Schema{
-			// 				Type: &openapi3.Types{"array"},
-			// 				Items: &openapi3.SchemaRef{
-			// 					Value: &openapi3.Schema{
-			// 						Type: &openapi3.Types{"array"},
-			// 						Items: &openapi3.SchemaRef{
-			// 							Value: createIntegerSchemaWithMin(),
-			// 						},
-			// 					},
-			// 				},
-			// 			},
-			// 		}
-			// 	}
-			// }
-			// }
-
 			isPtr := f.Type.Kind() == reflect.Pointer
 			hasOmitEmptySet := slices.Contains(jsonTags, "omitempty")
 			if isFieldRequired(isPtr, hasOmitEmptySet) {
