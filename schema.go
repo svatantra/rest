@@ -427,56 +427,22 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 						Value: &openapi3.Schema{
 							Type: &openapi3.Types{"array"},
 							Items: &openapi3.SchemaRef{
-								Value: &openapi3.Schema{
-									Type:   &openapi3.Types{"integer"},
-									Format: "int64",
-								},
+								Value: createIntegerSchema(),
 							},
 						},
 					}
 				} else if elementType == reflect.Uint || elementType == reflect.Uint8 || elementType == reflect.Uint16 || elementType == reflect.Uint32 || elementType == reflect.Uint64 {
-					minValue := 0.0
 					schema.Properties[fieldName] = &openapi3.SchemaRef{
 						Value: &openapi3.Schema{
 							Type: &openapi3.Types{"array"},
 							Items: &openapi3.SchemaRef{
-								Value: &openapi3.Schema{
-									Type:   &openapi3.Types{"integer"},
-									Format: "int64",
-									Min:    &minValue,
-								},
+								Value: createIntegerSchemaWithMin(),
 							},
 						},
 					}
-				}
-			}
-
-			if f.Type.Kind() == reflect.Slice {
-				elementType := f.Type.Elem().Kind()
-
-				if elementType == reflect.Slice {
-					// If the element type is a slice, check if it's a slice of int64 ([][]int64)
-					innerElementType := f.Type.Elem().Elem().Kind() // f.Type.Elem() is the inner slice, Elem().Kind() is the type of elements in the inner slice
-
+				} else if elementType == reflect.Slice {
+					innerElementType := f.Type.Elem().Elem().Kind()
 					if innerElementType == reflect.Int64 {
-						schema.Properties[fieldName] = &openapi3.SchemaRef{
-							Value: &openapi3.Schema{
-								Type: &openapi3.Types{"array"},
-								Items: &openapi3.SchemaRef{
-									Value: &openapi3.Schema{
-										Type: &openapi3.Types{"array"}, // Nested arrays for [][]int64
-										Items: &openapi3.SchemaRef{
-											Value: &openapi3.Schema{
-												Type:   &openapi3.Types{"integer"},
-												Format: "int64",
-											},
-										},
-									},
-								},
-							},
-						}
-					} else if innerElementType == reflect.Uint || innerElementType == reflect.Uint8 || innerElementType == reflect.Uint16 || innerElementType == reflect.Uint32 || innerElementType == reflect.Uint64 {
-						minValue := 0.0
 						schema.Properties[fieldName] = &openapi3.SchemaRef{
 							Value: &openapi3.Schema{
 								Type: &openapi3.Types{"array"},
@@ -484,11 +450,21 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 									Value: &openapi3.Schema{
 										Type: &openapi3.Types{"array"},
 										Items: &openapi3.SchemaRef{
-											Value: &openapi3.Schema{
-												Type:   &openapi3.Types{"integer"},
-												Format: "int64",
-												Min:    &minValue,
-											},
+											Value: createIntegerSchema(),
+										},
+									},
+								},
+							},
+						}
+					} else if innerElementType == reflect.Uint || innerElementType == reflect.Uint8 || innerElementType == reflect.Uint16 || innerElementType == reflect.Uint32 || innerElementType == reflect.Uint64 {
+						schema.Properties[fieldName] = &openapi3.SchemaRef{
+							Value: &openapi3.Schema{
+								Type: &openapi3.Types{"array"},
+								Items: &openapi3.SchemaRef{
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"array"},
+										Items: &openapi3.SchemaRef{
+											Value: createIntegerSchemaWithMin(),
 										},
 									},
 								},
@@ -497,6 +473,43 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 					}
 				}
 			}
+
+			// if f.Type.Kind() == reflect.Slice {
+			// elementType := f.Type.Elem().Kind()
+
+			// if elementType == reflect.Slice {
+			// 	innerElementType := f.Type.Elem().Elem().Kind()
+			// 	if innerElementType == reflect.Int64 {
+			// 		schema.Properties[fieldName] = &openapi3.SchemaRef{
+			// 			Value: &openapi3.Schema{
+			// 				Type: &openapi3.Types{"array"},
+			// 				Items: &openapi3.SchemaRef{
+			// 					Value: &openapi3.Schema{
+			// 						Type: &openapi3.Types{"array"},
+			// 						Items: &openapi3.SchemaRef{
+			// 							Value: createIntegerSchema(),
+			// 						},
+			// 					},
+			// 				},
+			// 			},
+			// 		}
+			// 	} else if innerElementType == reflect.Uint || innerElementType == reflect.Uint8 || innerElementType == reflect.Uint16 || innerElementType == reflect.Uint32 || innerElementType == reflect.Uint64 {
+			// 		schema.Properties[fieldName] = &openapi3.SchemaRef{
+			// 			Value: &openapi3.Schema{
+			// 				Type: &openapi3.Types{"array"},
+			// 				Items: &openapi3.SchemaRef{
+			// 					Value: &openapi3.Schema{
+			// 						Type: &openapi3.Types{"array"},
+			// 						Items: &openapi3.SchemaRef{
+			// 							Value: createIntegerSchemaWithMin(),
+			// 						},
+			// 					},
+			// 				},
+			// 			},
+			// 		}
+			// 	}
+			// }
+			// }
 
 			isPtr := f.Type.Kind() == reflect.Pointer
 			hasOmitEmptySet := slices.Contains(jsonTags, "omitempty")
@@ -532,6 +545,24 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 	}
 
 	return
+}
+
+// Function to return schema without Min value
+func createIntegerSchema() *openapi3.Schema {
+	return &openapi3.Schema{
+		Type:   &openapi3.Types{"integer"},
+		Format: "int64",
+	}
+}
+
+// Function to return schema with Min value set to 0.0
+func createIntegerSchemaWithMin() *openapi3.Schema {
+	minValue := 0.0
+	return &openapi3.Schema{
+		Type:   &openapi3.Types{"integer"},
+		Format: "int64",
+		Min:    &minValue,
+	}
 }
 
 func getDefaultValue(gormTagValue string) interface{} {
