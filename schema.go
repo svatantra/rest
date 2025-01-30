@@ -490,7 +490,7 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 	return
 }
 
-// Function to return schema without Min value
+// createIntegerSchema returns schema without Min value
 func createIntegerSchema() *openapi3.Schema {
 	return &openapi3.Schema{
 		Type:   &openapi3.Types{"integer"},
@@ -498,7 +498,7 @@ func createIntegerSchema() *openapi3.Schema {
 	}
 }
 
-// Function to return schema with Min value set to 0.0
+// createIntegerSchemaWithMin returns schema with Min value set to 0.0
 func createIntegerSchemaWithMin() *openapi3.Schema {
 	minValue := 0.0
 	return &openapi3.Schema{
@@ -508,22 +508,22 @@ func createIntegerSchemaWithMin() *openapi3.Schema {
 	}
 }
 
-// Function to return the array schema with items created using createIntegerSchema()
+// createArraySchemaWithIntegerItems returns the array schema with items created using createIntegerSchema()
 func createArraySchemaWithIntegerItems() *openapi3.Schema {
 	return &openapi3.Schema{
 		Type: &openapi3.Types{"array"},
 		Items: &openapi3.SchemaRef{
-			Value: createIntegerSchema(), // Use createIntegerSchema for items
+			Value: createIntegerSchema(),
 		},
 	}
 }
 
-// Function to return the array schema with items created using createIntegerSchemaWithMin
+// createArraySchemaWithIntegerItemsWithMin returns the array schema with items created using createIntegerSchemaWithMin
 func createArraySchemaWithIntegerItemsWithMin() *openapi3.Schema {
 	return &openapi3.Schema{
 		Type: &openapi3.Types{"array"},
 		Items: &openapi3.SchemaRef{
-			Value: createIntegerSchemaWithMin(), // Use createIntegerSchemaWithMin for items
+			Value: createIntegerSchemaWithMin(),
 		},
 	}
 }
