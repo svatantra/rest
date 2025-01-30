@@ -420,6 +420,84 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				schema.Properties[fieldName].Value.Min = &minValue
 			}
 
+			if f.Type.Kind() == reflect.Slice {
+				elementType := f.Type.Elem().Kind()
+				if elementType == reflect.Int64 {
+					schema.Properties[fieldName] = &openapi3.SchemaRef{
+						Value: &openapi3.Schema{
+							Type: &openapi3.Types{"array"},
+							Items: &openapi3.SchemaRef{
+								Value: &openapi3.Schema{
+									Type:   &openapi3.Types{"integer"},
+									Format: "int64",
+								},
+							},
+						},
+					}
+				} else if elementType == reflect.Uint || elementType == reflect.Uint8 || elementType == reflect.Uint16 || elementType == reflect.Uint32 || elementType == reflect.Uint64 {
+					minValue := 0.0
+					schema.Properties[fieldName] = &openapi3.SchemaRef{
+						Value: &openapi3.Schema{
+							Type: &openapi3.Types{"array"},
+							Items: &openapi3.SchemaRef{
+								Value: &openapi3.Schema{
+									Type:   &openapi3.Types{"integer"},
+									Format: "int64",
+									Min:    &minValue,
+								},
+							},
+						},
+					}
+				}
+			}
+
+			if f.Type.Kind() == reflect.Slice {
+				elementType := f.Type.Elem().Kind()
+
+				if elementType == reflect.Slice {
+					// If the element type is a slice, check if it's a slice of int64 ([][]int64)
+					innerElementType := f.Type.Elem().Elem().Kind() // f.Type.Elem() is the inner slice, Elem().Kind() is the type of elements in the inner slice
+
+					if innerElementType == reflect.Int64 {
+						schema.Properties[fieldName] = &openapi3.SchemaRef{
+							Value: &openapi3.Schema{
+								Type: &openapi3.Types{"array"},
+								Items: &openapi3.SchemaRef{
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"array"}, // Nested arrays for [][]int64
+										Items: &openapi3.SchemaRef{
+											Value: &openapi3.Schema{
+												Type:   &openapi3.Types{"integer"},
+												Format: "int64",
+											},
+										},
+									},
+								},
+							},
+						}
+					} else if innerElementType == reflect.Uint || innerElementType == reflect.Uint8 || innerElementType == reflect.Uint16 || innerElementType == reflect.Uint32 || innerElementType == reflect.Uint64 {
+						minValue := 0.0
+						schema.Properties[fieldName] = &openapi3.SchemaRef{
+							Value: &openapi3.Schema{
+								Type: &openapi3.Types{"array"},
+								Items: &openapi3.SchemaRef{
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"array"},
+										Items: &openapi3.SchemaRef{
+											Value: &openapi3.Schema{
+												Type:   &openapi3.Types{"integer"},
+												Format: "int64",
+												Min:    &minValue,
+											},
+										},
+									},
+								},
+							},
+						}
+					}
+				}
+			}
+
 			isPtr := f.Type.Kind() == reflect.Pointer
 			hasOmitEmptySet := slices.Contains(jsonTags, "omitempty")
 			if isFieldRequired(isPtr, hasOmitEmptySet) {
