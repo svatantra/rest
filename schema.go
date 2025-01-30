@@ -418,9 +418,7 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				schema.Properties[fieldName].Value.Format = "int64"
 				minValue := 0.0
 				schema.Properties[fieldName].Value.Min = &minValue
-			}
-
-			if f.Type.Kind() == reflect.Slice {
+			} else if f.Type.Kind() == reflect.Slice {
 				elementType := f.Type.Elem().Kind()
 				if elementType == reflect.Int64 {
 					schema.Properties[fieldName] = &openapi3.SchemaRef{
