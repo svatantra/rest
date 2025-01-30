@@ -424,12 +424,7 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				elementType := f.Type.Elem().Kind()
 				if elementType == reflect.Int64 {
 					schema.Properties[fieldName] = &openapi3.SchemaRef{
-						Value: &openapi3.Schema{
-							Type: &openapi3.Types{"array"},
-							Items: &openapi3.SchemaRef{
-								Value: createIntegerSchema(),
-							},
-						},
+						Value: createArraySchemaWithIntegerItems(),
 					}
 				} else if elementType == reflect.Uint || elementType == reflect.Uint8 || elementType == reflect.Uint16 || elementType == reflect.Uint32 || elementType == reflect.Uint64 {
 					schema.Properties[fieldName] = &openapi3.SchemaRef{
@@ -447,12 +442,7 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 							Value: &openapi3.Schema{
 								Type: &openapi3.Types{"array"},
 								Items: &openapi3.SchemaRef{
-									Value: &openapi3.Schema{
-										Type: &openapi3.Types{"array"},
-										Items: &openapi3.SchemaRef{
-											Value: createIntegerSchema(),
-										},
-									},
+									Value: createArraySchemaWithIntegerItems(),
 								},
 							},
 						}
@@ -562,6 +552,16 @@ func createIntegerSchemaWithMin() *openapi3.Schema {
 		Type:   &openapi3.Types{"integer"},
 		Format: "int64",
 		Min:    &minValue,
+	}
+}
+
+// Function to return the array schema with items created using createIntegerSchema()
+func createArraySchemaWithIntegerItems() *openapi3.Schema {
+	return &openapi3.Schema{
+		Type: &openapi3.Types{"array"},
+		Items: &openapi3.SchemaRef{
+			Value: createIntegerSchema(), // Use createIntegerSchema for items
+		},
 	}
 }
 
