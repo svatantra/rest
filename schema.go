@@ -418,6 +418,38 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 				schema.Properties[fieldName].Value.Format = "int64"
 				minValue := 0.0
 				schema.Properties[fieldName].Value.Min = &minValue
+			} else if f.Type.Kind() == reflect.Slice {
+				elementType := f.Type.Elem().Kind()
+				if elementType == reflect.Int64 {
+					schema.Properties[fieldName] = &openapi3.SchemaRef{
+						Value: createArraySchemaWithIntegerItems(),
+					}
+				} else if elementType == reflect.Uint || elementType == reflect.Uint8 || elementType == reflect.Uint16 || elementType == reflect.Uint32 || elementType == reflect.Uint64 {
+					schema.Properties[fieldName] = &openapi3.SchemaRef{
+						Value: createArraySchemaWithIntegerItemsWithMin(),
+					}
+				} else if elementType == reflect.Slice {
+					innerElementType := f.Type.Elem().Elem().Kind()
+					if innerElementType == reflect.Int64 {
+						schema.Properties[fieldName] = &openapi3.SchemaRef{
+							Value: &openapi3.Schema{
+								Type: &openapi3.Types{"array"},
+								Items: &openapi3.SchemaRef{
+									Value: createArraySchemaWithIntegerItems(),
+								},
+							},
+						}
+					} else if innerElementType == reflect.Uint || innerElementType == reflect.Uint8 || innerElementType == reflect.Uint16 || innerElementType == reflect.Uint32 || innerElementType == reflect.Uint64 {
+						schema.Properties[fieldName] = &openapi3.SchemaRef{
+							Value: &openapi3.Schema{
+								Type: &openapi3.Types{"array"},
+								Items: &openapi3.SchemaRef{
+									Value: createArraySchemaWithIntegerItemsWithMin(),
+								},
+							},
+						}
+					}
+				}
 			}
 
 			isPtr := f.Type.Kind() == reflect.Pointer
@@ -454,6 +486,44 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 	}
 
 	return
+}
+
+// createIntegerSchema returns schema without Min value
+func createIntegerSchema() *openapi3.Schema {
+	return &openapi3.Schema{
+		Type:   &openapi3.Types{"integer"},
+		Format: "int64",
+	}
+}
+
+// createIntegerSchemaWithMin returns schema with Min value set to 0.0
+func createIntegerSchemaWithMin() *openapi3.Schema {
+	minValue := 0.0
+	return &openapi3.Schema{
+		Type:   &openapi3.Types{"integer"},
+		Format: "int64",
+		Min:    &minValue,
+	}
+}
+
+// createArraySchemaWithIntegerItems returns the array schema with items created using createIntegerSchema()
+func createArraySchemaWithIntegerItems() *openapi3.Schema {
+	return &openapi3.Schema{
+		Type: &openapi3.Types{"array"},
+		Items: &openapi3.SchemaRef{
+			Value: createIntegerSchema(),
+		},
+	}
+}
+
+// createArraySchemaWithIntegerItemsWithMin returns the array schema with items created using createIntegerSchemaWithMin
+func createArraySchemaWithIntegerItemsWithMin() *openapi3.Schema {
+	return &openapi3.Schema{
+		Type: &openapi3.Types{"array"},
+		Items: &openapi3.SchemaRef{
+			Value: createIntegerSchemaWithMin(),
+		},
+	}
 }
 
 func getDefaultValue(gormTagValue string) interface{} {
