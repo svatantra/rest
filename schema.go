@@ -527,9 +527,9 @@ func createArraySchemaWithIntegerItemsWithMin() *openapi3.Schema {
 }
 
 func getDefaultValue(gormTagValue string) interface{} {
-	defaultIndex := strings.Index(gormTagValue, "default")
+	defaultIndex := strings.Index(gormTagValue, "default:")
 	semicolonIndex := strings.Index(gormTagValue[defaultIndex:], ";")
-	defaultValue := gormTagValue[defaultIndex+len("default:") : semicolonIndex]
+	defaultValue := gormTagValue[defaultIndex+len("default:") : defaultIndex+semicolonIndex]
 
 	switch {
 	case defaultValue == "true" || defaultValue == "false":
