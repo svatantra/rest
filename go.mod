@@ -6,6 +6,7 @@ require (
 	github.com/getkin/kin-openapi v0.124.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/google/go-cmp v0.5.9
+	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8
 	golang.org/x/tools v0.20.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -21,5 +22,6 @@ require (
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

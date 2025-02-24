@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/sirupsen/logrus"
 	"github.com/svatantra/rest/enums"
 	"github.com/svatantra/rest/getcomments/parser"
 	"golang.org/x/exp/constraints"
@@ -527,9 +528,12 @@ func createArraySchemaWithIntegerItemsWithMin() *openapi3.Schema {
 }
 
 func getDefaultValue(gormTagValue string) interface{} {
-	defaultIndex := strings.Index(gormTagValue, "default")
+	defaultIndex := strings.Index(gormTagValue, "default:")
 	semicolonIndex := strings.Index(gormTagValue[defaultIndex:], ";")
-	defaultValue := gormTagValue[defaultIndex+len("default:") : semicolonIndex]
+	if semicolonIndex == -1 {
+		logrus.Fatalln("semicolon not found in gorm tag ", gormTagValue)
+	}
+	defaultValue := gormTagValue[defaultIndex+len("default:") : defaultIndex+semicolonIndex]
 
 	switch {
 	case defaultValue == "true" || defaultValue == "false":
