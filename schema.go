@@ -2,7 +2,6 @@ package rest
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"slices"
 	"sort"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/sirupsen/logrus"
 	"github.com/svatantra/rest/enums"
 	"github.com/svatantra/rest/getcomments/parser"
 	"golang.org/x/exp/constraints"
@@ -531,7 +531,7 @@ func getDefaultValue(gormTagValue string) interface{} {
 	defaultIndex := strings.Index(gormTagValue, "default:")
 	semicolonIndex := strings.Index(gormTagValue[defaultIndex:], ";")
 	if semicolonIndex == -1 {
-		log.Fatalln("semicolon not found in gorm tag ", gormTagValue)
+		logrus.Fatalln("semicolon not found in gorm tag ", gormTagValue)
 	}
 	defaultValue := gormTagValue[defaultIndex+len("default:") : defaultIndex+semicolonIndex]
 
