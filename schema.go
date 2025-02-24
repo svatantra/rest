@@ -2,6 +2,7 @@ package rest
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"slices"
 	"sort"
@@ -528,14 +529,9 @@ func createArraySchemaWithIntegerItemsWithMin() *openapi3.Schema {
 
 func getDefaultValue(gormTagValue string) interface{} {
 	defaultIndex := strings.Index(gormTagValue, "default:")
-	if defaultIndex == -1 {
-		fmt.Println("default value not found in gorm tag ", gormTagValue)
-		return nil
-	}
 	semicolonIndex := strings.Index(gormTagValue[defaultIndex:], ";")
 	if semicolonIndex == -1 {
-		fmt.Println("semicolon not found in gorm tag ", gormTagValue)
-		return nil
+		log.Fatalln("semicolon not found in gorm tag ", gormTagValue)
 	}
 	defaultValue := gormTagValue[defaultIndex+len("default:") : defaultIndex+semicolonIndex]
 
