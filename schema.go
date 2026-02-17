@@ -15,6 +15,11 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+const (
+	many2many  = "many2many"
+	foreignKey = "foreignKey"
+)
+
 func newSpec(name string) *openapi3.T {
 	return &openapi3.T{
 		OpenAPI: "3.0.0",
@@ -388,7 +393,7 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 			gormTagValue := f.Tag.Get("gorm")
 			// Skip field that establishes a many-to-many relationship with the same struct.
 			// It is skipped to avoid infinite loops.
-			if strings.Contains(gormTagValue, "many2many") {
+			if strings.Contains(gormTagValue, many2many) {
 				if t.Name() == f.Type.Elem().Elem().Name() {
 					many2manyFields = append(many2manyFields, SkippedField{StructName: t.Name(), StructField: f})
 					continue
@@ -397,7 +402,7 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 
 			// Skip field that establishes a self-referential relationship with the same struct.
 			// It is skipped to avoid infinite loops.
-			if strings.Contains(gormTagValue, "foreignKey") {
+			if strings.Contains(gormTagValue, foreignKey) {
 				if t.Name() == f.Type.Elem().Name() {
 					selfReferentialFields = append(selfReferentialFields, SkippedField{StructName: t.Name(), StructField: f})
 					continue
