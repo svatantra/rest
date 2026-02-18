@@ -15,6 +15,11 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+const (
+	many2many  = "many2many"
+	foreignKey = "foreignKey"
+)
+
 func newSpec(name string) *openapi3.T {
 	return &openapi3.T{
 		OpenAPI: "3.0.0",
@@ -188,6 +193,19 @@ func (api *API) createOpenAPI() (spec *openapi3.T, err error) {
 		}
 	}
 
+	for _, selfReferentialField := range selfReferentialFields {
+		attribute := selfReferentialField.StructField
+		jsonTagValue := attribute.Tag.Get("json")
+		fieldType := attribute.Type
+		if fieldType.Kind() == reflect.Ptr && fieldType.Elem().Kind() == reflect.Struct {
+			structType := fieldType.Elem()
+			structName := structType.Name()
+			spec.Components.Schemas[selfReferentialField.StructName].Value.Properties[jsonTagValue] = &openapi3.SchemaRef{
+				Ref: fmt.Sprintf("#/components/schemas/%s", structName),
+			}
+		}
+	}
+
 	return spec, err
 }
 
@@ -280,12 +298,16 @@ func isMarkedAsDeprecated(comment string) bool {
 	return false
 }
 
-type Many2ManyField struct {
+type SkippedField struct {
 	StructName  string
 	StructField reflect.StructField
 }
 
-var many2manyFields []Many2ManyField
+// many2manyFields contains fields that establish a many-to-many relationship with the same struct. They are skipped to avoid infinite loops.
+var many2manyFields []SkippedField
+
+// selfReferentialFields contains fields that establish a self-referential relationship with the same struct. They are skipped to avoid infinite loops.
+var selfReferentialFields []SkippedField
 
 // RegisterModel allows a model to be registered manually so that additional configuration can be applied.
 // The schema returned can be modified as required.
@@ -371,9 +393,18 @@ func (api *API) RegisterModel(model Model, opts ...ModelOpts) (name string, sche
 			gormTagValue := f.Tag.Get("gorm")
 			// Skip field that establishes a many-to-many relationship with the same struct.
 			// It is skipped to avoid infinite loops.
-			if strings.Contains(gormTagValue, "many2many") {
+			if strings.Contains(gormTagValue, many2many) {
 				if t.Name() == f.Type.Elem().Elem().Name() {
-					many2manyFields = append(many2manyFields, Many2ManyField{StructName: t.Name(), StructField: f})
+					many2manyFields = append(many2manyFields, SkippedField{StructName: t.Name(), StructField: f})
+					continue
+				}
+			}
+
+			// Skip field that establishes a self-referential relationship with the same struct.
+			// It is skipped to avoid infinite loops.
+			if strings.Contains(gormTagValue, foreignKey) {
+				if t.Name() == f.Type.Elem().Name() {
+					selfReferentialFields = append(selfReferentialFields, SkippedField{StructName: t.Name(), StructField: f})
 					continue
 				}
 			}
